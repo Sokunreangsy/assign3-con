@@ -33,8 +33,6 @@ namespace assign3_con
         public List<Student> FetchAllStudents()
         {
             List<Student> students = new List<Student>();
-
-            MySqlConnection conn = GetConnection();
             MySqlDataReader rdr = null;
 
             try
@@ -69,8 +67,103 @@ namespace assign3_con
 
             return students;
         }
+
+        private List<StudentGroup> FetchGroups(int id)
+        {
+            List<StudentGroup> studentGroups = new List<StudentGroup>();
+            MySqlDataReader rdr = null;
+            try
+            {
+
+                conn.Open();
+
+                MySqlCommand cmd = new MySqlCommand("select * from studentGroup where group_id=?id", conn);
+                cmd.Parameters.AddWithValue("id", id);
+                rdr = cmd.ExecuteReader();
+
+                while (rdr.Read())
+                {
+                    //Note that in your assignment you will need to inspect the *type* of the
+                    //employee/researcher before deciding which kind of concrete class to create.
+                    studentGroups.Add(new StudentGroup
+                    {
+                        
+                        GroupId = rdr.GetInt32(0),
+                        GroupName = rdr.GetString(1)
+                    });
+                }
+            }
+            catch (MySqlException e)
+            {
+                Console.WriteLine("Error connecting to database: " + e);
+            }
+            finally
+            {
+                if (rdr != null)
+                {
+                    rdr.Close();
+                }
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return studentGroups;
+        }
+        public Class FetchAClass(int id)
+        {
+            Class resultClass= new Class();
+            MySqlDataReader rdr = null;
+
+            try
+            {
+                conn.Open();
+
+                MySqlCommand cmd = new MySqlCommand("select * from class where class_id=?id", conn);
+                cmd.Parameters.AddWithValue("id", id);
+                rdr = cmd.ExecuteReader();
+
+                while (rdr.Read())
+                {
+                    //Note that in your assignment you will need to inspect the *type* of the
+                    //employee/researcher before deciding which kind of concrete class to create.
+                    resultClass = new Class { 
+                        ClassId=rdr.GetInt32(0),
+                        GroupId=rdr.GetInt32(1),
+                        Day=ParseEnum<Days>(rdr.GetString(2)),
+                        Start=rdr.GetString(3),
+                        End=rdr.GetString(4),
+                        Room=rdr.GetString(5)
+                    };
+                }
+                
+            }
+            catch (MySqlException e)
+            {
+                Console.WriteLine("Error connecting to database: " + e);
+            }
+            finally
+            {
+                if (rdr != null)
+                {
+                    rdr.Close();
+                }
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+                resultClass.StudentGroups = FetchGroups(resultClass.GroupId);
+            }
+
+            return resultClass;
+        }
         /*SELECT class_id,day,class.start,class.end,room FROM class 
         INNER JOIN studentGroup ON class.group_id=studentGroup.group_id
         WHERE class_id=2 */
+
+        private static T ParseEnum<T>(string value)
+        {
+            return (T)Enum.Parse(typeof(T), value);
+        }
     }
 }
